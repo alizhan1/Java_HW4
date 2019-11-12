@@ -1,13 +1,11 @@
-package space.harbour.java.hw3;
+package space.harbour.java.hw4;
 
 import javax.json.*;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.security.DigestException;
 import java.util.ArrayList;
 import java.util.List;
-
-import space.harbour.java.hw3.Jsonable;
 
 public class Movie implements Jsonable {
 
@@ -90,11 +88,67 @@ public class Movie implements Jsonable {
 
     @Override
     public boolean writeJsonToFile(String filename) {
+        JsonArrayBuilder genresJson = Json.createArrayBuilder();
+        JsonArrayBuilder languagesJson = Json.createArrayBuilder();
+        JsonArrayBuilder countriesJson = Json.createArrayBuilder();
+        JsonArrayBuilder writersJson = Json.createArrayBuilder();
+        JsonArrayBuilder actorsJson = Json.createArrayBuilder();
+        JsonArrayBuilder ratingsJson = Json.createArrayBuilder();
+
+        for (String l : languages) {
+            languagesJson.add(l);
+        }
+
+        for (String c : countries) {
+            countriesJson.add(c);
+        }
+
+        for (String g : genres) {
+            genresJson.add(g);
+        }
+
+        for (Writer w : writers) {
+            writersJson.add(Json.createObjectBuilder()
+                    .add("Name", w.name)
+                    .add("Type", w.type));
+        }
+
+        for (Actor a : actors) {
+            actorsJson.add(Json.createObjectBuilder()
+                    .add("Name", a.name)
+                    .add("As", a.as));
+        }
+
+        for (Rating r : ratings) {
+            try {
+                ratingsJson.add(Json.createObjectBuilder()
+                        .add("Source", r.source)
+                        .add("Value", r.value)
+                        .add("Votes", r.votes));
+            }
+            catch (NullPointerException e) {
+                ratingsJson.add(Json.createObjectBuilder()
+                        .add("Source", r.source)
+                        .add("Value", r.value));
+            }
+        }
+
         JsonObject movie = Json.createObjectBuilder()
                 .add("Title", title)
                 .add("Year", year)
                 .add("Released", released)
                 .add("Runtime", runtime)
+                .add("Genres", genresJson)
+                .add("Director", Json.createObjectBuilder()
+                        .add("Name", director.name))
+                .add("Writers", writersJson)
+                .add("Actors", actorsJson)
+                .add("Plot", plot)
+                .add("Languages", languagesJson)
+                .add("Countries", countriesJson)
+                .add("Awards", awards)
+                .add("Poster", poster)
+                .add("Ratings", ratingsJson)
                 .build();
         //System.out.println(movie.toString());
         try{
@@ -116,67 +170,90 @@ public class Movie implements Jsonable {
             JsonObject movieJson = jsonReader.readObject();
 
             JsonArray genres_json = movieJson.getJsonArray("Genres");
-            List<String> genres = new ArrayList<String>();
+            genres = new ArrayList<>();
             for(int i = 0; i < genres_json.size(); i++){
                 genres.add(genres_json.getString(i));
             }
 
             JsonArray actors_json = movieJson.getJsonArray("Actors");
-            List<Actor> actors = new ArrayList<Actor>();
+            actors = new ArrayList<>();
             for(int i = 0; i < actors_json.size(); i++){
-                actors.add((Actor)actors_json.getJsonObject(i));
+                Actor actor = new Actor(actors_json.getJsonObject(i).getString("Name"), actors_json.getJsonObject(i).getString("As"));
+                actors.add(actor);
             }
 
             JsonArray lang_json = movieJson.getJsonArray("Languages");
-            List<String> lang = new ArrayList<String>();
+            languages = new ArrayList<>();
             for(int i = 0; i < lang_json.size(); i++){
-                lang.add(lang_json.getString(i));
+                languages.add(lang_json.getString(i));
             }
 
             JsonArray count_json = movieJson.getJsonArray("Countries");
-            List<String> count = new ArrayList<String>();
+            countries = new ArrayList<>();
             for(int i = 0; i < count_json.size(); i++){
-                count.add(count_json.getString(i));
+                countries.add(count_json.getString(i));
             }
 
             JsonArray ratings_json = movieJson.getJsonArray("Ratings");
-            List<Rating> ratings = new ArrayList<Rating>();
+            ratings = new ArrayList<>();
             for(int i = 0; i < ratings_json.size(); i++){
-                ratings.add((Rating)ratings_json.getJsonObject(i));
+                try {
+                    Rating rating = new Rating(ratings_json.getJsonObject(i).getString("Source"), ratings_json.getJsonObject(i).getString("Value"), ratings_json.getJsonObject(i).getInt("Votes"));
+                    ratings.add(rating);
+                }
+                catch (NullPointerException e) {
+                    Rating rating = new Rating(ratings_json.getJsonObject(i).getString("Source"), ratings_json.getJsonObject(i).getString("Value"));
+                    ratings.add(rating);
+                }
             }
 
             JsonArray writers_json = movieJson.getJsonArray("Writers");
-            List<Writer> writers = new ArrayList<Writer>();
+            writers = new ArrayList<>();
             for(int i = 0; i < writers_json.size(); i++){
-                writers.add((Writer)writers_json.getJsonObject(i));
+                Writer writer = new Writer(writers_json.getJsonObject(i).getString("Name"), writers_json.getJsonObject(i).getString("Type"));
+                writers.add(writer);
             }
 
+            director = new Director( movieJson.getJsonObject("Director").getString("Name"));
+            title = movieJson.getString("Title");
+            year = movieJson.getInt("Year");
+            released = movieJson.getString("Released");
+            runtime = movieJson.getInt("Runtime");
+            plot = movieJson.getString("Plot");
+            awards = movieJson.getString("Awards");
+            poster = movieJson.getString("Poster");
+
             Movie movie = new Movie(
-                    movieJson.getString("Title"),
-                    movieJson.getInt("Year"),
-                    movieJson.getString("Released"),
-                    movieJson.getInt("Runtime"),
+                    title,
+                    year,
+                    released,
+                    runtime,
                     genres,
-                    (Director) movieJson.getJsonObject("Director"),
+                    director,
                     writers,
                     actors,
-                    movieJson.getString("Plot"),
-                    lang,
-                    count,
-                    movieJson.getString("Awards"),
-                    movieJson.getString("Poster"),
+                    plot,
+                    languages,
+                    countries,
+                    awards,
+                    poster,
                     ratings
             );
             return movie;
         }
         catch (Exception e){
+            e.printStackTrace();
+            System.out.println("ERROR!!!");
             return null;
         }
     }
-    
+
     public static void main(String[] args){
-        Movie movie2 = new Movie();
-        movie2.readFromJsonFile("BladeRunner.json");
-        System.out.println(movie2.title);
+        Movie movie = new Movie();
+        movie.readFromJsonFile("BladeRunner.json");
+
+        movie.writeJsonToFile("newmovie.json");
+        System.out.println(movie.title);
+
     }
 }

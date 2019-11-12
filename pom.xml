@@ -2,12 +2,12 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>hw-04</groupId>
-	<artifactId>hw-04</artifactId>
+	<groupId>hw4</groupId>
+	<artifactId>hw4</artifactId>
 	<version>1.0</version>
 	<packaging>jar</packaging>
 
-	<name>hw-03</name>
+	<name>hw4</name>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
